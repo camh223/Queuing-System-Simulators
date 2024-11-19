@@ -1,18 +1,16 @@
+import java.util.Arrays;
+import com.mathworks.engine.*;
+
 public class mmccSimulator {
-    static int Q_LIMIT = 20000;
 
     // System State Variables
     private int[] server_status;
-    private int num_in_q;
-    private double[] time_arrival;
 
     // Global Variables
     private double sim_time;
     private double time_last_event;
     public int next_event_type;
     private double[] time_next_event;
-    private double total_of_delays;
-    private double area_num_in_q;
     private double[] area_server_status;
     private double lambda;
     private double mean_interarrival;
@@ -21,23 +19,20 @@ public class mmccSimulator {
     private int c;
     public int num_custs_required;
     public int num_customer;
-    private int num_custs_delayed;
     private double time_past;
-    private double average_delay;
-    private double average_number_in_queue;
     private double[] server_utilisation;
     private int num_events;
     private double min_time_next_event;
     private int server_idle;
     private double total_server_utilisation;
     private double total_loss;
+    private double blocking_probability;
 
-    public mmcSimulator(double lambda, double u, int num_custs_required, int c) {
+    public mmccSimulator(double lambda, double u, int num_custs_required, int c) {
         this.num_custs_required = num_custs_required;
         this.lambda = lambda;
         this.u = u;
         this.c = c;
-        this.time_arrival = new double[Q_LIMIT+1];
         this.time_next_event = new double[c+1];
         this.server_status = new int[c+1];
         this.area_server_status = new double[c+1];
@@ -51,15 +46,14 @@ public class mmccSimulator {
         sim_time = 0.0;
         // initialise state variables
         num_customer = 0;
-        num_in_q = 0;
         num_events = c+1;
         for (int i = 1; i <= c; i++) {
             server_status[i] = 0; // IDLE
             area_server_status[i] = 0;
         }
         // initialise statistical counters
-        area_num_in_q = 0.0;
         time_last_event = 0.0;
+        total_loss = 0;
         // initialise event list
         time_next_event[0] = sim_time + expon(mean_interarrival);
         for (int i = 1; i <= c; i++) {
@@ -98,10 +92,10 @@ public class mmccSimulator {
             }
             i++;
         }
+        num_customer++;
         if (server_idle != 0) { // Someone is IDLE
             server_status[server_idle] = 1;
             time_next_event[server_idle] = sim_time + expon(mean_service);
-            num_customer++;
         } else { // server is BUSY
             total_loss++;
         }
@@ -117,7 +111,6 @@ public class mmccSimulator {
         // System.out.println("Update Stats");
         // Update area accumulators for time-average statistics
         time_past = sim_time-time_last_event;
-        area_num_in_q += time_past*num_in_q;
         for (int i = 1; i <= c; i++) {
             area_server_status[i] += time_past*server_status[i];
         }
@@ -126,8 +119,7 @@ public class mmccSimulator {
     public void report() {
         // System.out.println("Report Stats");
         // Compute the desired measures of performance
-        average_delay = total_of_delays / num_customer;
-        average_number_in_queue = area_num_in_q / sim_time;
+        blocking_probability = total_loss / num_customer;
         for (int i = 1; i <= c; i++) {
             server_utilisation[i] = area_server_status[i]/sim_time;
             total_server_utilisation += area_server_status[i];
@@ -161,9 +153,8 @@ public class mmccSimulator {
         MatlabEngine eng = MatlabEngine.connectMatlab(engines[0]);
         mmccSimulator sim;
         double[] arrival_rates = new double[101];
-        double[] average_delays = new double[101];
-        double[] avg_num_in_Qs = new double[101];
         double[] total_server_utils = new double[101];
+        double[] blocking_probabilities = new double[101]; 
         int c = 3; // Number of Servers
 
         for (int i = 1; i < 101; i++) {
@@ -171,17 +162,13 @@ public class mmccSimulator {
             sim = new mmccSimulator(i, 1/0.01, 5000, c);
             sim.main_sim();
             arrival_rates[i] = i;
-            average_delays[i] = sim.average_delay;
-            avg_num_in_Qs[i] = sim.average_number_in_queue;
             total_server_utils[i] = sim.total_server_utilisation;
+            blocking_probabilities[i] = sim.blocking_probability;
         }
         eng.putVariable("sim_lambda", arrival_rates);
-        eng.putVariable("sim_Wq", average_delays);
-        eng.putVariable("sim_Lq", avg_num_in_Qs);
         eng.putVariable("c", c);
-        System.out.println("Average Delay: "+ Arrays.toString(average_delays));
-        System.out.println("Average Number in Queue: "+ Arrays.toString(avg_num_in_Qs));
         System.out.println("Total Server Utilisation: "+ Arrays.toString(total_server_utils));
+        System.out.println("Blocking Probability: " + Arrays.toString(blocking_probabilities));
         eng.close();
     }
 }
