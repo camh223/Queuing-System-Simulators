@@ -1,0 +1,8 @@
+{
+    "java.project.sourcePaths": [
+        "."
+    ],
+    "java.project.referencedLibraries": [
+        "c:\\Program Files\\MATLAB\\R2024b\\extern\\engines\\java\\jar\\engine.jar"
+    ]
+}
