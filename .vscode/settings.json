@@ -1,8 +1,9 @@
 {
     "java.project.sourcePaths": [
-        "mm1Simulator",
         "mmccSimulator",
-        "mmcSimulator"
+        "mmcSimulator",
+        "mm1Simulator",
+        "m1+m2mccSimulator"
     ],
     "java.project.referencedLibraries": [
         "c:\\Program Files\\MATLAB\\R2024b\\extern\\engines\\java\\jar\\engine.jar"
