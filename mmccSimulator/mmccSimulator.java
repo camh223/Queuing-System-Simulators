@@ -167,6 +167,7 @@ public class mmccSimulator {
         }
         eng.putVariable("sim_lambda", arrival_rates);
         eng.putVariable("c", c);
+        eng.putVariable("sim_Pc", blocking_probabilities);
         System.out.println("Total Server Utilisation: "+ Arrays.toString(total_server_utils));
         System.out.println("Blocking Probability: " + Arrays.toString(blocking_probabilities));
         eng.close();

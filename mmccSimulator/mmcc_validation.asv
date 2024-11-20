@@ -1,0 +1,14 @@
+u = 1/0.01;
+n = length(sim_lambda);
+
+P0 = zeros(1, n);
+Pc = zeros(1, n);
+
+for i = 1 : length(sim_lambda)
+    x = 0;
+    for k = 0 : c
+        x = x + (((i / u) ^ k) * (1 / factorial(k)));
+    end
+    P0(i) = 1 / x;
+    Pc(i) =  P0(i) * ((i / u) ^ c) / factorial(c);
+end
