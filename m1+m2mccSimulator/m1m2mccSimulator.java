@@ -187,13 +187,14 @@ public class m1m2mccSimulator {
         double[] call_blocking_probabilities = new double[101]; 
         double[] handover_failure_probabilities = new double[101];
         double[] aggregated_blocking_probabilities = new double[101];
+        double u = 1/0.01;
         int c = 3; // Number of Servers
         int n = 2; // Threshold
         double handover_rate = 0.1;
 
         for (int i = 1; i < 101; i++) {
             System.out.println("Current Run: "+ i);
-            sim = new m1m2mccSimulator(i, handover_rate, 1/0.01, 5000, c, n);
+            sim = new m1m2mccSimulator(i, handover_rate, u, 5000, c, n);
             sim.main_sim();
             arrival_rates[i] = i;
             total_server_utils[i] = sim.total_server_utilisation;
@@ -202,8 +203,12 @@ public class m1m2mccSimulator {
             aggregated_blocking_probabilities[i] = sim.aggregated_blocking_probability;
         }
         eng.putVariable("sim_lambda", arrival_rates);
+        eng.putVariable("handover_rate", handover_rate);
+        eng.putVariable("u", u);
         eng.putVariable("c", c);
+        eng.putVariable("n", n);
         eng.putVariable("sim_CBP", call_blocking_probabilities);
+        eng.putVariable("sim_HFP", handover_failure_probabilities);
         System.out.println("Total Server Utilisation: "+ Arrays.toString(total_server_utils));
         System.out.println("Call Blocking Probability: " + Arrays.toString(call_blocking_probabilities));
         eng.close();
