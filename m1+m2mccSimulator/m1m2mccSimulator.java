@@ -1,5 +1,6 @@
 import java.util.Arrays;
 import com.mathworks.engine.*;
+import java.util.Random;
 
 public class m1m2mccSimulator {
 
@@ -25,6 +26,7 @@ public class m1m2mccSimulator {
     public int num_custs_required;
     public int num_customer;
     public int num_handover;
+    public long seed;
     private double time_past;
     private double[] server_utilisation;
     private int num_events;
@@ -36,8 +38,9 @@ public class m1m2mccSimulator {
     private double call_blocking_probability;
     private double handover_failure_probability;
     private double aggregated_blocking_probability;
+    private Random random;
 
-    public m1m2mccSimulator(double lambda1, double lambda2, double u, int num_custs_required, int c, int n) {
+    public m1m2mccSimulator(double lambda1, double lambda2, double u, int num_custs_required, int c, int n, long seed) {
         this.num_custs_required = num_custs_required;
         this.lambda1 = lambda1;
         this.lambda2 = lambda2;
@@ -48,6 +51,7 @@ public class m1m2mccSimulator {
         this.server_status = new int[c+1];
         this.area_server_status = new double[c+1];
         this.server_utilisation = new double[c+1];
+        this.random = new Random(seed);
     }
 
     public void initialise() {
@@ -74,6 +78,7 @@ public class m1m2mccSimulator {
         for (int i = 1; i <= c; i++) {
             time_next_event[i] = Double.MAX_VALUE;
         }
+        // initialise random number generator
     }
 
     public void timing() {
@@ -164,7 +169,7 @@ public class m1m2mccSimulator {
     }
 
     public double expon(double mean) {
-        double x = Math.random();
+        double x = random.nextDouble();
         return (-mean * Math.log(x));
     }
 
@@ -193,20 +198,36 @@ public class m1m2mccSimulator {
         double[] call_blocking_probabilities = new double[101]; 
         double[] handover_failure_probabilities = new double[101];
         double[] aggregated_blocking_probabilities = new double[101];
-        double u = 1/100;
+        double u = 1.0/100.0;
         int c = 16; // Number of Servers
         int n = 2; // Threshold
         double handover_rate = 0.1;
+        double arrival_rate;
+        double cumul_server_util;
+        double cumul_CBP;
+        double cumul_HFP;
+        double cumul_ABP;
 
-        for (int i = 1; i < 100; i++) {
+        for (int i = 1; i < 101; i++) {
             System.out.println("Current Run: "+ i);
-            sim = new m1m2mccSimulator(i, handover_rate, u, 5000, c, n);
-            sim.main_sim();
-            arrival_rates[i] = i;
-            total_server_utils[i] = sim.total_server_utilisation;
-            call_blocking_probabilities[i] = sim.call_blocking_probability;
-            handover_failure_probabilities[i] = sim.handover_failure_probability;
-            aggregated_blocking_probabilities[i] = sim.aggregated_blocking_probability;
+            arrival_rate = i/100.0;
+            cumul_server_util = 0.0;
+            cumul_CBP = 0.0;
+            cumul_HFP = 0.0;
+            cumul_ABP = 0.0;
+            for (int j = 1; j <= 5; j++) {
+                sim = new m1m2mccSimulator(arrival_rate, handover_rate, u, 15000, c, n, j);
+                sim.main_sim();
+                cumul_server_util += sim.total_server_utilisation;
+                cumul_CBP += sim.call_blocking_probability;
+                cumul_HFP += sim.handover_failure_probability;
+                cumul_ABP += sim.aggregated_blocking_probability;
+            }
+            arrival_rates[i] = arrival_rate;
+            total_server_utils[i] = cumul_server_util / 5.0;
+            call_blocking_probabilities[i] = cumul_CBP / 5.0;
+            handover_failure_probabilities[i] = cumul_HFP / 5.0;
+            aggregated_blocking_probabilities[i] = cumul_ABP / 5.0;
         }
         eng.putVariable("sim_lambda2", arrival_rates);
         eng.putVariable("sim_lambda1", handover_rate);
