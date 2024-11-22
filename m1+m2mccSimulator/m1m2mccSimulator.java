@@ -56,14 +56,14 @@ public class m1m2mccSimulator {
 
     public void initialise() {
         // System.out.println("Initialise");
-        mean_interarrival = 1/lambda1;
-        mean_handover = 1/lambda2;
-        mean_service = 1/u;
-        sim_time = 0.0;
+        mean_interarrival = 1.0/lambda1;
+        mean_handover = 1.0/lambda2;
+        mean_service = 1.0/u;
+        num_events = c+2;
         // initialise state variables
+        sim_time = 0.0;
         num_customer = 0;
         num_handover = 0;
-        num_events = c+2;
         for (int i = 1; i <= c; i++) {
             server_status[i] = 0; // IDLE
             area_server_status[i] = 0;
@@ -152,14 +152,8 @@ public class m1m2mccSimulator {
     public void report() {
         // System.out.println("Report Stats");
         // Compute the desired measures of performance
-        System.out.println("Total_arrival_loss: " + total_arrival_loss);
-        System.out.println("Num_customer: " + num_customer);
-        System.out.println("total_handover_loss: " + total_handover_loss);
-        System.out.println("num_handover: " + num_handover);
         call_blocking_probability = total_arrival_loss / num_customer;
-        System.out.println("Call Blocking Probability: " + call_blocking_probability);
         handover_failure_probability = total_handover_loss / num_handover;
-        System.out.println("Handover failure probability: " + handover_failure_probability);
         aggregated_blocking_probability = call_blocking_probability + (10 * handover_failure_probability);
         for (int i = 1; i <= c; i++) {
             server_utilisation[i] = area_server_status[i]/sim_time;
@@ -194,6 +188,7 @@ public class m1m2mccSimulator {
         MatlabEngine eng = MatlabEngine.connectMatlab(engines[0]);
         m1m2mccSimulator sim;
         double[] arrival_rates = new double[101];
+        double[] handover_rates = new double[101];
         double[] total_server_utils = new double[101];
         double[] call_blocking_probabilities = new double[101]; 
         double[] handover_failure_probabilities = new double[101];
@@ -201,21 +196,52 @@ public class m1m2mccSimulator {
         double u = 1.0/100.0;
         int c = 16; // Number of Servers
         int n = 2; // Threshold
-        double handover_rate = 0.1;
+        double handover_rate;
         double arrival_rate;
         double cumul_server_util;
         double cumul_CBP;
         double cumul_HFP;
         double cumul_ABP;
+        /* sim = new m1m2mccSimulator(0.01, 0.1, 0.01, 15000, 16, 2, 1);
+        sim.main_sim();
+        System.out.println("Total Server Utilisation: " + sim.total_server_utilisation);
+        System.out.println("Call Blocking Probability: " + sim.call_blocking_probability);
+        System.out.println("Handover Failure Probability: " + sim.handover_failure_probability);
+        System.out.println("Aggregated Blocking Probability: " + sim.aggregated_blocking_probability); */
 
-        for (int i = 1; i < 101; i++) {
+        // Exercise 2.2
+        /* for (int i = 1; i < 1001; i++) {
             System.out.println("Current Run: "+ i);
-            arrival_rate = i/100.0;
+            arrival_rate = 0.1;
+            handover_rate = i/100000.0;
             cumul_server_util = 0.0;
             cumul_CBP = 0.0;
             cumul_HFP = 0.0;
             cumul_ABP = 0.0;
-            for (int j = 1; j <= 5; j++) {
+            for (int j = 1; j <= 20; j++) {
+                sim = new m1m2mccSimulator(arrival_rate, handover_rate, u, 15000, c, n, j);
+                sim.main_sim();
+                cumul_server_util += sim.total_server_utilisation;
+                cumul_CBP += sim.call_blocking_probability;
+                cumul_HFP += sim.handover_failure_probability;
+                cumul_ABP += sim.aggregated_blocking_probability;
+            }
+            handover_rates[i] = handover_rate;
+            total_server_utils[i] = cumul_server_util / 20.0;
+            call_blocking_probabilities[i] = cumul_CBP / 20.0;
+            handover_failure_probabilities[i] = cumul_HFP / 20.0;
+            aggregated_blocking_probabilities[i] = cumul_ABP / 20.0; 
+        } */
+        // Exercise 2.3:
+        for (int i = 1; i < 101; i++) {
+            System.out.println("Current Run: "+ i);
+            handover_rate = 0.03;
+            arrival_rate = i/1000.0;
+            cumul_server_util = 0.0;
+            cumul_CBP = 0.0;
+            cumul_HFP = 0.0;
+            cumul_ABP = 0.0;
+            for (int j = 1; j <= 20; j++) {
                 sim = new m1m2mccSimulator(arrival_rate, handover_rate, u, 15000, c, n, j);
                 sim.main_sim();
                 cumul_server_util += sim.total_server_utilisation;
@@ -224,21 +250,24 @@ public class m1m2mccSimulator {
                 cumul_ABP += sim.aggregated_blocking_probability;
             }
             arrival_rates[i] = arrival_rate;
-            total_server_utils[i] = cumul_server_util / 5.0;
-            call_blocking_probabilities[i] = cumul_CBP / 5.0;
-            handover_failure_probabilities[i] = cumul_HFP / 5.0;
-            aggregated_blocking_probabilities[i] = cumul_ABP / 5.0;
+            total_server_utils[i] = cumul_server_util / 20.0;
+            call_blocking_probabilities[i] = cumul_CBP / 20.0;
+            handover_failure_probabilities[i] = cumul_HFP / 20.0;
+            aggregated_blocking_probabilities[i] = cumul_ABP / 20.0;
         }
         eng.putVariable("sim_lambda2", arrival_rates);
-        eng.putVariable("sim_lambda1", handover_rate);
+        eng.putVariable("sim_lambda1", handover_rates);
+        // eng.putVariable("sim_lambda1", handover_rate);
         eng.putVariable("u", u);
         eng.putVariable("c", c);
         eng.putVariable("n", n);
         eng.putVariable("sim_CBP", call_blocking_probabilities);
         eng.putVariable("sim_HFP", handover_failure_probabilities);
+        eng.putVariable("sim_ABP", aggregated_blocking_probabilities);
         System.out.println("Total Server Utilisation: "+ Arrays.toString(total_server_utils));
         System.out.println("Call Blocking Probability: " + Arrays.toString(call_blocking_probabilities));
         System.out.println("Handoff Failure Probabilities: " + Arrays.toString(handover_failure_probabilities));
+        System.out.println("Aggregated Blocking Probabilities: " + Arrays.toString(aggregated_blocking_probabilities));
         eng.close();
     }
 }
