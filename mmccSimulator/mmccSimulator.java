@@ -1,4 +1,6 @@
 import java.util.Arrays;
+import java.util.Random;
+
 import com.mathworks.engine.*;
 
 public class mmccSimulator {
@@ -27,8 +29,9 @@ public class mmccSimulator {
     private double total_server_utilisation;
     private double total_loss;
     private double blocking_probability;
+    private Random random;
 
-    public mmccSimulator(double lambda, double u, int num_custs_required, int c) {
+    public mmccSimulator(double lambda, double u, int num_custs_required, int c, long seed) {
         this.num_custs_required = num_custs_required;
         this.lambda = lambda;
         this.u = u;
@@ -37,16 +40,17 @@ public class mmccSimulator {
         this.server_status = new int[c+1];
         this.area_server_status = new double[c+1];
         this.server_utilisation = new double[c+1];
+        this.random = new Random(seed);
     }
 
     public void initialise() {
         // System.out.println("Initialise");
         mean_interarrival = 1/lambda;
         mean_service = 1/u;
-        sim_time = 0.0;
-        // initialise state variables
-        num_customer = 0;
         num_events = c+1;
+        // initialise state variables
+        sim_time = 0.0;
+        num_customer = 0;
         for (int i = 1; i <= c; i++) {
             server_status[i] = 0; // IDLE
             area_server_status[i] = 0;
@@ -128,7 +132,7 @@ public class mmccSimulator {
     }
 
     public double expon(double mean) {
-        double x = Math.random();
+        double x = random.nextDouble();
         return (-mean * Math.log(x));
     }
 
@@ -155,18 +159,36 @@ public class mmccSimulator {
         double[] arrival_rates = new double[101];
         double[] total_server_utils = new double[101];
         double[] blocking_probabilities = new double[101]; 
-        int c = 3; // Number of Servers
+        int c = 16; // Number of Servers
+        double cumul_server_util;
+        double cumul_blocking_prob;
+        double u = 1.0/100.0;
+        double arrival_rate;
 
-        for (int i = 1; i < 101; i++) {
+        /* sim = new mmccSimulator(0.3, 0.01, 15000, 16, 1);
+        sim.main_sim();
+        System.out.println("Total Server Utilisation: " + sim.total_server_utilisation);
+        System.out.println("Blocking Probability: " + sim.blocking_probability); */
+
+        for (int i = 10; i < 101; i++) {
             System.out.println("Current Run: "+ i);
-            sim = new mmccSimulator(i, 1/0.01, 5000, c);
-            sim.main_sim();
-            arrival_rates[i] = i;
-            total_server_utils[i] = sim.total_server_utilisation;
-            blocking_probabilities[i] = sim.blocking_probability;
+            arrival_rate = i/1000.0;
+            cumul_server_util = 0.0;
+            cumul_blocking_prob = 0.0;
+            for (int j = 1; j <= 20; j++) {
+                sim = new mmccSimulator(arrival_rate, u, 15000, c, j);
+                sim.main_sim();
+                cumul_server_util += sim.total_server_utilisation;
+                cumul_blocking_prob += sim.blocking_probability;
+            }
+            arrival_rates[i] = arrival_rate;
+            total_server_utils[i] = cumul_server_util / 20.0;
+            blocking_probabilities[i] = cumul_blocking_prob / 20.0;
         }
         eng.putVariable("sim_lambda", arrival_rates);
+        eng.putVariable("u", u);
         eng.putVariable("c", c);
+        eng.putVariable("sim_p", total_server_utils);
         eng.putVariable("sim_Pc", blocking_probabilities);
         System.out.println("Total Server Utilisation: "+ Arrays.toString(total_server_utils));
         System.out.println("Blocking Probability: " + Arrays.toString(blocking_probabilities));

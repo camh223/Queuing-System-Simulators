@@ -4,7 +4,7 @@ k = 100;
 p = zeros(1, k);
 ana_Lq = zeros(1, k);
 ana_Wq = zeros(1, k);
-c = double(c)
+c = double(c);
 
 for i = 1 : length(sim_lambda)
     p(i) = sim_lambda(i) / (c * u);
